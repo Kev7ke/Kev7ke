@@ -5,6 +5,7 @@
           [--vergleich ORDNER] CSV des Monats davor (für Trends)
           [--ohne-ki]          ohne Claude (nur Zahlen)
           [--ohne-wp]          ohne WordPress-Daten
+  monatlich                    für den Cronjob: Bericht bauen + dir zur Freigabe schicken
   whatsapp-test                schickt dir "Hallo" per WhatsApp
   server                       startet den Webhook-Server für WhatsApp
 """
@@ -16,7 +17,7 @@ from . import ablauf, config
 def main() -> None:
     p = argparse.ArgumentParser(prog="seo_bericht", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("befehl", choices=["demo", "bericht", "whatsapp-test", "server"])
+    p.add_argument("befehl", choices=["demo", "bericht", "monatlich", "whatsapp-test", "server"])
     p.add_argument("--csv")
     p.add_argument("--vergleich")
     p.add_argument("--ohne-ki", action="store_true")
@@ -32,6 +33,16 @@ def main() -> None:
         b = ablauf.erstelle_bericht(csv=a.csv, csv_vergleich=a.vergleich,
                                     mit_wp=not a.ohne_wp, mit_ki=not a.ohne_ki)
         print(f"Fertig: {b['pfad']}  ({b['todos']} To-dos)")
+    elif a.befehl == "monatlich":
+        # Läuft ohne dich (Cronjob). Du hast dem Bot vorher nicht geschrieben, also gilt
+        # das 24-h-Fenster nicht → Nachricht an dich muss eine freigegebene Vorlage sein.
+        from . import whatsapp
+        b = ablauf.erstelle_bericht()
+        ablauf.merke_offen(b)
+        whatsapp.vorlage(config.get("MEINE_WHATSAPP", pflicht=True),
+                         config.get("WHATSAPP_VORLAGE_ICH", "seo_bericht_fertig"),
+                         [b["monat"], ablauf.link(b["name"])])
+        print(f"Bericht {b['monat']} erstellt, Freigabe-Anfrage gesendet.")
     elif a.befehl == "whatsapp-test":
         from . import whatsapp
         print(whatsapp.text(config.get("MEINE_WHATSAPP", pflicht=True), "Hallo 👋 – der SEO-Bot funktioniert."))

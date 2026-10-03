@@ -7,6 +7,8 @@ jeden Monat gleich aufgebaut und die Zahlen stammen nie aus der KI.
 import datetime as dt
 import html
 import json
+from pathlib import Path
+from string import Template
 
 MONATE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
           "August", "September", "Oktober", "November", "Dezember"]
@@ -105,81 +107,88 @@ def texte_ohne_ki(auswertung: dict, monat: str) -> dict:
 
 
 # ---------- HTML ----------
+# Das Aussehen steht in vorlage.html; hier werden nur die Platzhalter befüllt.
+
+VORLAGE = Path(__file__).with_name("vorlage.html")
+ART = {"ergänzen": "Ergänzen", "wording": "Wording", "aktualisieren": "Aktualisieren"}
+
 
 def _e(x) -> str:
     return html.escape(str(x))
 
 
+def _tausender(zahl: int) -> str:
+    return f"{zahl:,}".replace(",", ".")
+
+
+def _prozent(anteil: float) -> str:
+    return f"{abs(anteil) * 100:.0f} %"
+
+
 def _trend(s: dict) -> str:
     if s.get("trend") is None:
-        return ""
-    pfeil = "▲" if s["trend"] >= 0 else "▼"
-    klasse = "plus" if s["trend"] >= 0 else "minus"
-    return f'<span class="{klasse}">{pfeil} {abs(s["trend"]):.0%}</span>'
+        return "<td class='n muted'>–</td>"
+    hoch = s["trend"] >= 0
+    return f"<td class='n {'up' if hoch else 'down'}'>{'▲' if hoch else '▼'} {_prozent(s['trend'])}</td>"
 
 
-def _kpi(titel: str, jetzt: int, vorher: int | None) -> str:
-    delta = ""
+def _kpi(titel: str, jetzt: int, vorher: int | None, monat: str, vormonat: str) -> str:
+    vergleich = ""
     if vorher:
         d = (jetzt - vorher) / vorher
-        delta = f'<div class="{"plus" if d >= 0 else "minus"}">{"▲" if d >= 0 else "▼"} {abs(d):.0%} zum Vormonat</div>'
-    return f'<div class="kpi"><div class="label">{titel}</div><div class="wert">{jetzt:,}</div>{delta}</div>'.replace(",", ".")
+        breite = round(100 * min(vorher, jetzt) / max(vorher, jetzt))
+        b_vorher, b_jetzt = (breite, 100) if jetzt >= vorher else (100, breite)
+        vergleich = (
+            f"<div class='delta {'up' if d >= 0 else 'down'}'>{'▲' if d >= 0 else '▼'} {_prozent(d)} zum {_e(vormonat)}</div>"
+            f"<div class='bars'><div>{_e(vormonat)} <span class='track'><i style='width:{b_vorher}%'></i></span></div>"
+            f"<div>{_e(monat)} <span class='track'><i style='width:{b_jetzt}%'></i></span></div></div>")
+    return (f"<div class='kpi'><div class='muted small'>{titel}</div>"
+            f"<div class='num'>{_tausender(jetzt)}</div>{vergleich}</div>")
 
 
-def html_bericht(texte: dict, auswertung: dict, monat: str, praxis: str) -> str:
+def html_bericht(texte: dict, auswertung: dict, start: dt.date, praxis: str, gruss: str = "Viele Grüße") -> str:
     g = auswertung["gesamt"]
-    zeilen = "".join(
-        f"<tr><td><a href='{_e(s['url'])}'>{_e(s['titel'])}</a></td>"
-        f"<td class='zahl'>{s['klicks']} {_trend(s)}</td><td class='zahl'>{s['impressionen']}</td>"
-        f"<td class='zahl'>{str(s['position']).replace('.', ',')}</td></tr>" for s in auswertung["top_seiten"])
-    anfragen = "".join(f"<li>{_e(a['key'])} <span class='leise'>({int(a['clicks'])} Klicks)</span></li>"
-                       for a in auswertung["top_anfragen"][:6])
+    monat = MONATE[start.month - 1]
+    vormonat = MONATE[start.month - 2]
+    folgemonat = MONATE[start.month % 12]
+    arten = [t["art"] for t in auswertung["kunden_todos"]]
+
     todos = "".join(
-        f"""<li class="todo"><label><input type="checkbox"> <strong>{_e(t['was_tun'])}</strong></label>
-        <div class="leise"><a href="{_e(t['url'])}">{_e(t['titel'])}</a> · ca. {t['minuten']} Min.</div>
-        <p>{_e(t['warum'])}</p><div class="vorschlag"><b>Vorschlag:</b> {_e(t['vorschlag'])}</div></li>"""
-        for t in texte["todos"]) or "<li>Diesen Monat nichts zu tun – alles läuft. 🎉</li>"
-    highlights = "".join(f"<li>{_e(h)}</li>" for h in texte["highlights"])
-    agentur = len(auswertung["agentur_todos"])
+        f"""<li class="todo"><label><input type="checkbox" id="todo-{i}" data-todo="{i}"> {_e(t['was_tun'])}</label>
+      <div class="meta"><a href="{_e(t['url'])}">{_e(t['titel'])}</a><span class="chip">ca. {int(t['minuten'])} Min.</span>"""
+        + (f"<span class='chip'>{ART.get(arten[i], '')}</span>" if i < len(arten) else "")
+        + f"""</div>
+      <p>{_e(t['warum'])}</p>
+      <div class="suggest"><b>Vorschlag</b>{_e(t['vorschlag'])}</div></li>"""
+        for i, t in enumerate(texte["todos"])
+    ) or "<li class='todo'>Diesen Monat gibt es nichts zu tun. Alles läuft.</li>"
 
-    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEO-Zwischenstand {_e(monat)}</title>
-<style>
-:root{{--bg:#faf8f5;--karte:#fff;--text:#2b2b2b;--leise:#6b6b6b;--akzent:#4a7c74;--plus:#2e7d4f;--minus:#b4543a;--linie:#e8e3dc}}
-@media (prefers-color-scheme:dark){{:root{{--bg:#1c1d1f;--karte:#26282b;--text:#eee;--leise:#a5a5a5;--akzent:#7fb5ab;--plus:#6fcf97;--minus:#f2a08a;--linie:#3a3d41}}}}
-body{{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,sans-serif}}
-main{{max-width:760px;margin:0 auto;padding:32px 16px 64px}}
-h1{{font-size:1.6rem;margin:0}} h2{{font-size:1.15rem;margin:2rem 0 .75rem;color:var(--akzent)}}
-.leise{{color:var(--leise);font-size:.9rem}} a{{color:var(--akzent)}}
-.kpis{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:1.5rem}}
-.kpi,.karte{{background:var(--karte);border:1px solid var(--linie);border-radius:12px;padding:16px}}
-.kpi .wert{{font-size:1.8rem;font-weight:650}} .plus{{color:var(--plus)}} .minus{{color:var(--minus)}}
-table{{width:100%;border-collapse:collapse;font-size:.95rem}} td,th{{padding:8px 6px;border-bottom:1px solid var(--linie);text-align:left}}
-.zahl{{text-align:right;white-space:nowrap}} th.zahl{{text-align:right}}
-.todos{{list-style:none;padding:0;margin:0;display:grid;gap:12px}}
-.todo{{background:var(--karte);border:1px solid var(--linie);border-left:4px solid var(--akzent);border-radius:12px;padding:14px 16px}}
-.todo p{{margin:.4rem 0}} .vorschlag{{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:.95rem}}
-@media print{{.todo input{{display:none}}}}
-</style></head><body><main>
-<div class="leise">{_e(praxis)}</div>
-<h1>SEO-Zwischenstand {_e(monat)}</h1>
-<p>{_e(texte['zusammenfassung'])}</p>
-<div class="kpis">{_kpi("Besuche über Google", g['klicks'], g.get('klicks_vorher'))}
-{_kpi("Einblendungen bei Google", g['impressionen'], g.get('impressionen_vorher'))}</div>
+    seiten = "".join(
+        f"<tr><td><a href='{_e(s['url'])}'>{_e(s['titel'])}</a></td><td class='n'>{s['klicks']}</td>{_trend(s)}"
+        f"<td class='n'>{_tausender(s['impressionen'])}</td><td class='n'>{str(s['position']).replace('.', ',')}</td></tr>"
+        for s in auswertung["top_seiten"])
 
-<h2>Was gut funktioniert hat</h2><ul>{highlights}</ul>
+    anfragen = "".join(f"<span class='q'>{_e(a['key'])} <span>{int(a['clicks'])}</span></span>"
+                       for a in auswertung["top_anfragen"][:8])
 
-<h2>Ihre To-dos ({len(texte['todos'])})</h2>
-<p class="leise">Nach Wirkung sortiert – wenn nur Zeit für eins ist: das erste.</p>
-<ul class="todos">{todos}</ul>
+    n = len(auswertung["agentur_todos"])
+    agentur = (f"{n} technische Kleinigkeit{'en' if n != 1 else ''} erledigen wir im Hintergrund, "
+               "zum Beispiel Bildbeschreibungen und die Kurzbeschreibungen, die Google unter Ihren Seiten anzeigt."
+               if n else "Technisch ist gerade alles in Ordnung.")
 
-<h2>Die stärksten Seiten</h2>
-<div class="karte"><table><tr><th>Seite</th><th class="zahl">Klicks</th><th class="zahl">Einblendungen</th><th class="zahl">Ø Position</th></tr>{zeilen}</table></div>
-
-<h2>Wonach gesucht wurde</h2><ul>{anfragen}</ul>
-
-<h2>Das übernehmen wir</h2>
-<p>{agentur} technische Kleinigkeit(en) (z. B. Bildbeschreibungen, Suchmaschinen-Texte) erledigen wir im Hintergrund.
-{_e(texte['naechster_monat'])}</p>
-</main></body></html>"""
+    return Template(VORLAGE.read_text(encoding="utf-8")).substitute(
+        id=f"{start:%Y-%m}",
+        monat=_e(f"{monat} {start.year}"),
+        folgemonat=_e(folgemonat),
+        praxis=_e(praxis or "Ihre Praxis"),
+        zusammenfassung=_e(texte["zusammenfassung"]),
+        kpis=_kpi("Besuche über Google", g["klicks"], g.get("klicks_vorher"), monat, vormonat)
+        + _kpi("Einblendungen in der Google-Suche", g["impressionen"], g.get("impressionen_vorher"), monat, vormonat),
+        highlights="".join(f"<li>{_e(h)}</li>" for h in texte["highlights"]),
+        todos=todos,
+        seiten=seiten,
+        anfragen=anfragen or "<span class='muted'>Keine Daten</span>",
+        agentur=_e(agentur),
+        naechster_monat=_e(texte["naechster_monat"]),
+        gruss=_e(gruss),
+    )

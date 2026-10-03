@@ -120,7 +120,20 @@ Kosten: ein Bericht kostet wenige Cent.
 
 - ☐ Kundin fragen, ob WhatsApp für sie okay ist (sonst E-Mail) und `KUNDIN_WHATSAPP` setzen
 - ☐ Einmal komplett: „seo“ → Bericht prüfen → „ja“
-- ☐ Optional später: automatisch am 2. jedes Monats (Cronjob), dann brauchst du auch für dich eine Vorlage
+- ☐ **Automatisch am 2. jedes Monats:**
+  1. Zweite Vorlage anlegen, Name `seo_bericht_fertig`, Kategorie *Utility*:
+     > SEO-Bericht {{1}} ist fertig: {{2}} – Antworte mit ja zum Senden an die Kundin oder nein zum Verwerfen.
+  2. Auf dem Server `crontab -e` und diese Zeile eintragen (8:05 Uhr, Pfad anpassen):
+     ```
+     5 8 2 * * cd /pfad/zu/seo-bericht && .venv/bin/python -m seo_bericht monatlich >> cron.log 2>&1
+     ```
+  3. Du bekommst die Nachricht, antwortest „ja“ – fertig. Deine Antwort öffnet das
+     24-h-Fenster, darum klappt der Rest wie bei „seo“.
+
+## Design anpassen
+
+Das Aussehen des Berichts steht in `seo_bericht/vorlage.html` (normales HTML/CSS).
+Farben ganz oben unter `:root` ändern, Platzhalter wie `$monat` stehen lassen.
 
 ## Sicherheit & Datenschutz
 

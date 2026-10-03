@@ -30,7 +30,8 @@ def erstelle_bericht(csv: str | None = None, csv_vergleich: str | None = None,
     auswertung = analyse.auswerten(daten, vorher, inhalte)
     texte = (bericht.texte_mit_claude(auswertung, monat, config.get("ANREDE", "Sie-Form"))
              if mit_ki else bericht.texte_ohne_ki(auswertung, monat))
-    seite = bericht.html_bericht(texte, auswertung, monat, config.get("PRAXIS_NAME", ""))
+    seite = bericht.html_bericht(texte, auswertung, start, config.get("PRAXIS_NAME", ""),
+                                 config.get("GRUSS", "Viele Grüße"))
 
     BERICHTE.mkdir(exist_ok=True)
     # Zufälliger Dateiname = nicht erratbarer Link, wenn der Server ihn ausliefert
@@ -42,6 +43,25 @@ def erstelle_bericht(csv: str | None = None, csv_vergleich: str | None = None,
         encoding="utf-8")
     return {"name": name, "pfad": pfad, "monat": monat, "todos": len(texte["todos"]),
             "klicks": auswertung["gesamt"]["klicks"]}
+
+
+OFFEN = BERICHTE / "offen.json"
+
+
+def merke_offen(b: dict) -> None:
+    """Merkt sich den Bericht, der auf dein "ja" wartet."""
+    BERICHTE.mkdir(exist_ok=True)
+    OFFEN.write_text(json.dumps({"name": b["name"], "monat": b["monat"]}))
+
+
+def offen() -> dict | None:
+    return json.loads(OFFEN.read_text()) if OFFEN.exists() else None
+
+
+def freigabe_nachricht(b: dict) -> str:
+    return (f"✅ SEO-Bericht {b['monat']} ist fertig ({b['klicks']} Klicks, "
+            f"{b['todos']} To-dos für die Kundin):\n{link(b['name'])}\n\n"
+            "Antworte *ja* zum Senden an die Kundin oder *nein* zum Verwerfen.")
 
 
 def link(name: str) -> str:

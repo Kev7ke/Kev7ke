@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>SEO-Zwischenstand $monat</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,600&family=Figtree:wght@400;500;600&display=swap">
+<!--
+  Design-Vorlage für den Monatsbericht. Platzhalter wie $monat werden automatisch ersetzt (ein echtes Dollarzeichen als $$ schreiben).
+  Farben stehen oben als Variablen – hier kannst du das Aussehen anpassen.
+-->
+<style>
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --fg:#1d2a2e; --muted:#5d6d71; --line:#dbe3e2;
+  --accent:#2f5d6b; --accent-soft:#e3eef0; --good:#2d7a52; --bad:#a8513b;
+  --display:"Literata",Georgia,"Times New Roman",serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#151b1d; --surface:#1e2629; --fg:#e6eceb; --muted:#9aa9ac; --line:#2f3a3d;
+  --accent:#8cc2cf; --accent-soft:#233237; --good:#74c79a; --bad:#eb9a84; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);padding-inline:16px;padding-block:40px 64px}
+.wrap{max-width:740px;margin:0 auto}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.eyebrow{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+h1,h2{font-family:var(--display);font-weight:600;text-wrap:balance;line-height:1.25}
+h1{font-size:2rem;margin:.25rem 0 1rem}
+h2{font-size:1.3rem;margin:2.75rem 0 1rem}
+.lead{font-size:1.08rem;max-width:62ch}
+.muted{color:var(--muted)} .small{font-size:.88rem}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:1.75rem}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0}
+.kpi .num{font:600 2.1rem/1.1 var(--display);font-variant-numeric:tabular-nums;margin:.35rem 0}
+.delta{font-size:.9rem;font-weight:600}
+.up{color:var(--good)} .down{color:var(--bad)}
+.bars{display:grid;gap:6px;margin-top:14px;font-size:.78rem;color:var(--muted)}
+.bars div{display:grid;grid-template-columns:6.5em 1fr;align-items:center;gap:8px}
+.bars .track{height:8px;border-radius:4px;background:var(--accent-soft);overflow:hidden}
+.bars i{display:block;height:100%;background:var(--muted);border-radius:4px}
+.bars div:last-child i{background:var(--accent)}
+ul.plain{padding-left:1.1rem;margin:0;display:grid;gap:.5rem;max-width:62ch}
+.todos{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.todo{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0}
+.todo.done{opacity:.55}
+.todo label{display:flex;gap:12px;align-items:flex-start;cursor:pointer;font-weight:600}
+.todo input{width:20px;height:20px;margin-top:3px;accent-color:var(--accent);flex:none}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:.5rem 0 .25rem 32px;font-size:.85rem}
+.chip{background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 10px;font-weight:500}
+.todo p{margin:.5rem 0 0 32px;max-width:60ch}
+.suggest{margin:.75rem 0 0 32px;padding:12px 14px;border-radius:10px;background:var(--bg);font-size:.95rem}
+.suggest b{display:block;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:.93rem;min-width:520px}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:left}
+tr:last-child td{border-bottom:0}
+th{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.queries{display:flex;flex-wrap:wrap;gap:8px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.9rem}
+.q span{color:var(--muted);font-variant-numeric:tabular-nums}
+.us{border-top:1px solid var(--line);margin-top:2.75rem;padding-top:1.5rem}
+.us h2{margin-top:0}
+.sign{font-family:var(--display);margin-top:1rem}
+@media print{.todo input{display:none} body{padding-block:0}}
+@media (prefers-reduced-motion:no-preference){.todo{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">$praxis · Zwischenstand</p>
+  <h1>Ihre Website im $monat</h1>
+  <p class="lead">$zusammenfassung</p>
+
+  <div class="kpis">$kpis</div>
+
+  <h2>Was gut funktioniert hat</h2>
+  <ul class="plain">$highlights</ul>
+
+  <h2>Ihre To-dos für $folgemonat</h2>
+  <p class="muted small">Nach Wirkung sortiert. Wenn Sie nur für eine Aufgabe Zeit haben, nehmen Sie die erste. Häkchen werden in Ihrem Browser gespeichert.</p>
+  <ul class="todos">$todos</ul>
+
+  <h2>Die meistbesuchten Seiten</h2>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Seite</th><th class="n">Besuche</th><th class="n">Trend</th><th class="n">Einblendungen</th><th class="n">Ø Platz</th></tr></thead>
+      <tbody>$seiten</tbody>
+    </table>
+  </div>
+
+  <h2>Wonach gesucht wurde</h2>
+  <div class="queries">$anfragen</div>
+  <p class="muted small">Zahl = Besuche über diesen Suchbegriff im $monat.</p>
+
+  <div class="us">
+    <h2>Das übernehmen wir</h2>
+    <p>$agentur $naechster_monat</p>
+    <p class="sign">$gruss</p>
+  </div>
+</main>
+<script>
+document.querySelectorAll('[data-todo]').forEach(function (cb) {
+  var key = 'seo-$id-' + cb.dataset.todo, li = cb.closest('.todo');
+  try { cb.checked = localStorage.getItem(key) === '1'; } catch (e) {}
+  li.classList.toggle('done', cb.checked);
+  cb.addEventListener('change', function () {
+    li.classList.toggle('done', cb.checked);
+    try { localStorage.setItem(key, cb.checked ? '1' : '0'); } catch (e) {}
+  });
+});
+</script>
+</body>
+</html>
