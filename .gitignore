@@ -1,0 +1,7 @@
+# SEO-Bericht: Zugangsdaten und Kundendaten nie committen
+.env
+seo-bericht/geheim/
+seo-bericht/berichte/
+seo-bericht/daten/
+__pycache__/
+.venv/
